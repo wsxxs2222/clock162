@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        h1 {
+            text-align: center;
+            margin: 10px;
+        }
+        .menu-bar {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        .length-select {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .container {
+            display: grid;
+            gap: 4px;
+            /*
+                2*border + height is cell size
+                cells * cellSize + gap * (cells-1) is container width
+            */
+            max-width: 188px;
+            margin-left: auto;
+            margin-right: auto;
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 40px;
+            border: 2px solid gray;
+            border-radius: 10%;
+            aspect-ratio: 1 / 1;
+        }
+    </style>
+    <title>Document</title>
+</head>
+<body>
+    <header>
+
+    </header>
+    <main>
+        <h1>
+            Wordle
+        </h1>
+        <div class="menu-bar">
+            <button>restart</button>
+            <button>reveal</button>
+        </div>
+        <div class="length-select">
+            <label>Word Length:</label>
+            <input type="radio" name="word-length" id="l4" value="4" checked> 4
+            <input type="radio" name="word-length" id="l5" value="5"> 5
+            <input type="radio" name="word-length" id="l6" value="6"> 6
+        </div>
+        
+        <div class="container">
+
+        </div>
+    </main>
+    <footer>
+
+    </footer>
+    <script>
+        "use strict";
+        let ATTEMPTS = 6;
+        let wordLength = 4;
+        let targetWord = "boar";
+        let wordArray = [];
+        let curLine = 0;
+        let curCellIndex = 0; // it is the index of the char we are about to type
+        let container = document.getElementsByClassName("container")[0];
+        let gameState = 2; // 0 for lose, 1 for win, 2 for going
+        let lettersDict = {}; // stores the letters of the tgt word
+
+        // load the word files
+
+
+        for (let i=0;i<6;i++)
+        {
+            for (let j=0;j<4;j++)
+            {
+                let elt = document.createElement("div");
+                elt.classList.add("cell");
+                container.appendChild(elt);
+                wordArray.push(" "); 
+            }
+        }
+        // init a dictionary capturing the letters of the tgt word
+        // character map to its frequency
+        for (let i=0;i<targetWord.length;i++)
+        {
+            if (targetWord[i] in lettersDict)
+            {
+                lettersDict[targetWord[i]]++;
+            }
+            else
+            {
+                lettersDict[targetWord[i]] = 1;
+            }
+        }
+
+        // check if the word is a valid word
+        function isValidWord()
+        {
+            return true;
+        }
+
+        // check if we guessed the correct word
+        function checkWin()
+        {
+            // all word in current line match the tgt word
+            for (let i=0;i<wordLength;i++)
+            {
+                if (wordArray[curLine * wordLength + i] !== targetWord[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function checkLose()
+        {
+            // all attempts are used and the game is on
+            if (curLine == ATTEMPTS - 1 && gameState === 2)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        // get the color background for each letter of guessed word
+        function getCellColors()
+        {
+            // initiallize color array
+            let colors = [];
+            for (let i=0;i<targetWord.length;i++) {colors.push("gray");}
+            // create a list of indices of the letters that have not been colored
+            // create a copy of the lettersDict to keep track the count of each letter left
+            let indices = [];
+            for (let i=0;i<targetWord.length;i++) {indices.push(i);}
+            let copyDict = Object.assign({}, lettersDict);
+            // first scan for matching letters
+            for (let i=wordLength-1;i>=0;i--)
+            {
+                if (wordArray[curLine * wordLength + i] === targetWord[i])
+                {
+                    colors[i] = "green";
+                    if (copyDict[wordArray[curLine * wordLength + i]] == 1)
+                    {
+                        delete copyDict[wordArray[curLine * wordLength + i]];
+                    }
+                    else
+                    {
+                        copyDict[wordArray[curLine * wordLength + i]]--;
+                    }
+                    indices.splice(i,1);
+                }
+            }
+            // second scan for mismatch but correct letters
+            for (let i in indices)
+            {
+                i = parseInt(i);
+                if (wordArray[curLine * wordLength + i] in copyDict)
+                {
+                    colors[i] = "yellow";
+                    if (copyDict[wordArray[curLine * wordLength + i]] == 1)
+                    {
+                        delete copyDict[wordArray[curLine * wordLength + i]];
+                    }
+                    else
+                    {
+                        copyDict[wordArray[curLine * wordLength + i]]--;
+                    }
+                }
+            }
+            // the leftovers are gray letters
+            return colors;
+        }
+
+        //
+        //
+        
+
+        addEventListener("keydown", function (event){
+            // if game is concluded, then don't allow key input
+            if (gameState !== 2)
+            {
+                return;
+            }
+            // check if the key is a letter
+            let key = event.key;
+            if (key >= "a" && key <= "z")
+            {
+                // can't type beyond the current line
+                if (curCellIndex < (curLine + 1) * wordLength)
+                {
+                    // update wordArray
+                    wordArray[curCellIndex] = key;
+                    // update text in the corresponding cell
+                    addTextToCell(curCellIndex, key);
+                    // increment current index
+                    curCellIndex++;
+                }
+            }
+            else if (key === "Enter")
+            {
+                checkWord();
+            }
+            else if (key === "Backspace")
+            {
+                // can't erase before the current line
+                if (curCellIndex > curLine * wordLength)
+                {
+                    removeTextFromCell(curCellIndex-1);
+                    curCellIndex--;
+                }
+            }
+        })
+
+        function checkWord()
+        {
+            // check if the current line is filled
+            if (curCellIndex === (curLine + 1) * wordLength)
+            {
+                if (isValidWord())
+                {
+                    let colors = getCellColors();
+                    updateCellColors(colors);
+                    if (checkWin())
+                    {
+                        gameState = 1;
+                        console.log("you win");
+                    }
+                    if (checkLose())
+                    {
+                        gameState = 0;
+                        console.log("you lose");
+                    }
+                    // go to the next line
+                    curLine++;
+                }
+            }
+        }
+
+        //
+        //
+
+        let cellArray = document.querySelector(".container").children
+        function addTextToCell(index, text)
+        {
+            cellArray[index].innerHTML = text;
+        }
+
+        function removeTextFromCell(index)
+        {
+            cellArray[index].innerHTML = "";
+        }
+
+        function updateCellColors(colors)
+        {
+            for (let i=0;i<wordLength;i++)
+            {
+                cellArray[curLine * wordLength + i].style.backgroundColor = colors[i];
+            }
+        }
+
+    </script>
+</body>
+</html>
