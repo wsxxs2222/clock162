@@ -14,11 +14,11 @@ document.addEventListener("keydown", e => {
 
     const player = document.querySelector(".player");
 
-    if (e.key === "ArrowRight" && playerCells.includes(player.parentElement.nextElementSibling)) {
+    if (e.key === "ArrowRight" && (player.parentElement.nextElementSibling in playerCells)) {
         player.parentElement.nextElementSibling.appendChild(player);
     }
 
-    if (e.key === "ArrowLeft" && playerCells.includes(player.parentElement.previousElementSibling)) {
+    if (e.key === "ArrowLeft" && (player.parentElement.previousElementSibling in playerCells)) {
         player.parentElement.previousElementSibling.appendChild(player);
     }
 });
